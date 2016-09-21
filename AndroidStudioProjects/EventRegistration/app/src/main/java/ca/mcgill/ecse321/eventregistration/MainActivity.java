@@ -19,6 +19,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import java.sql.Date;
+import java.sql.Time;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,6 +33,58 @@ import ca.mcgill.ecse321.eventregistration.persistence.PersistenceEventRegistrat
 
 
 public class MainActivity extends AppCompatActivity {
+
+    public void showDatePickerDialog(View v) {
+        TextView tf = (TextView) v;
+        Bundle args = getDateFromLabel(tf.getText());
+        args.putInt("id", v.getId());
+        DatePickerFragment newFragment = new DatePickerFragment();
+        newFragment.setArguments(args);
+        newFragment.show(getSupportFragmentManager(), "datePicker");
+    }
+    //
+
+    private Bundle getTimeFromLabel(CharSequence text) {
+        Bundle rtn = new Bundle();
+        String comps[] = text.toString().split(":");
+        int hour = 12;
+        int minute = 0;
+        if (comps.length == 2) {
+            hour = Integer.parseInt(comps[0]);
+            minute = Integer.parseInt(comps[1]);
+        }
+        rtn.putInt("hour", hour);
+        rtn.putInt("minute", minute);
+        return rtn;
+    }
+    private Bundle getDateFromLabel(CharSequence text) {
+        Bundle rtn = new Bundle();
+        String comps[] = text.toString().split("-");
+        int day = 1;
+        int month = 1;
+        int year = 1;
+        if (comps.length == 3) {
+            day = Integer.parseInt(comps[0]);
+            month = Integer.parseInt(comps[1]);
+            year = Integer.parseInt(comps[2]);
+        }
+        rtn.putInt("day", day);
+        rtn.putInt("month", month-1);
+        rtn.putInt("year", year);
+        return rtn;
+    }
+
+    public void setTime(int id, int h, int m) {
+        TextView tv = (TextView) findViewById(id);
+        tv.setText(String.format("%02d:%02d", h, m));
+    }
+    public void setDate(int id, int d, int m, int y) {
+        TextView tv = (TextView) findViewById(id);
+
+        tv.setText(String.format("%02d-%02d-%04d", d, m + 1, y));
+    }
+
+
     private HashMap<Integer, Participant> participants;
 
 
@@ -41,9 +95,9 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        PersistenceEventRegistration.setFileName(getFilesDir().getAbsoluteFile().toString());
-        PersistenceEventRegistration.loadEventRegistrationModel();
-//
+        //PersistenceEventRegistration.setFileName(getFilesDir().getAbsoluteFile().toString());
+        //PersistenceEventRegistration.loadEventRegistrationModel();
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -60,6 +114,8 @@ public class MainActivity extends AppCompatActivity {
     public void refreshData(){
         TextView tv = (TextView) findViewById(R.id.newparticipant_name);
         tv.setText("");
+        TextView tv2 = (TextView) findViewById(R.id.newevent_name);
+        tv2.setText("");
         // Initialize the data in the participant spinner
         RegistrationManager rm = RegistrationManager.getInstance();
         Spinner spinner = (Spinner) findViewById(R.id.participantspinner);
@@ -112,118 +168,21 @@ public class MainActivity extends AppCompatActivity {
         refreshData();
     }
 
-    public void Register(View v){
+    public void addEvent(View v){
         //
         TextView tv = (TextView) findViewById(R.id.newevent_name);
+        TextView tf = (TextView) v;
+        DatePickerFragment a = new DatePickerFragment();
+        Date d = new Date(a.onCreateDialog(getDateFromLabel(tf.getText())));
+        Time st = new Time();
+        Time et = new Time();
         EventRegistrationController pc = new EventRegistrationController();
         try{
-            pc.createParticipant(tv.getText().toString());
-            pc.createEvent(tv.getText().toString(), );
+            //pc.createParticipant(tv.getText().toString());
+            pc.createEvent(tv.getText().toString(),, getTimeFromLabel(tf.getText()),getTimeFromLabel(tf.getText()));
         } catch (InvalidInputException e){
             //TODO Handle error
         }
         refreshData();
     }
-    }
-
-    //
-    public class DatePickerFragment extends DialogFragment
-            implements DatePickerDialog.OnDateSetListener {
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            // Use the current date as the default date in the picker
-            final Calendar c = Calendar.getInstance();
-            int year = c.get(Calendar.YEAR);
-            int month = c.get(Calendar.MONTH);
-            int day = c.get(Calendar.DAY_OF_MONTH);
-            // Parse the existing time from the arguments
-            Bundle args = getArguments();
-            if (args != null) {
-                year = args.getInt("year");
-                month = args.getInt("month");
-                day = args.getInt("day");
-            }
-            // Create a new instance of DatePickerDialog and return it
-            return new DatePickerDialog(getActivity(), this, year, month, day);
-        }
-        public void onDateSet(DatePicker view, int year, int month, int day) {
-            MainActivity myActivity = (MainActivity)getActivity();
-            myActivity.setDate(getArguments().getInt("id"), day, month, year);
-        }
-    }
-    //
-    public class TimePickerFragment extends DialogFragment
-            implements TimePickerDialog.OnTimeSetListener {
-        String label;
-
-        @Override
-        public Dialog onCreateDialog(Bundle savedInstanceState) {
-            int hour = 0;
-            int minute = 0;
-            // Parse the existing time from the arguments
-            Bundle args = getArguments();
-            if (args != null) {
-                hour = args.getInt("hour");
-                minute = args.getInt("minute");
-            }
-            // Create a new instance of TimePickerDialog and return it
-            return new TimePickerDialog(getActivity(), this, hour, minute,
-                    DateFormat.is24HourFormat(getActivity()));
-        }
-
-        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-            MainActivity myActivity = (MainActivity) getActivity();
-            myActivity.setTime(getArguments().getInt("id"), hourOfDay, minute);
-        }
-    }
-    //
-    public void showDatePickerDialog(View v) {
-        TextView tf = (TextView) v;
-        Bundle args = getDateFromLabel(tf.getText());
-        args.putInt("id", v.getId());
-        DatePickerFragment newFragment = new DatePickerFragment();
-        newFragment.setArguments(args);
-        newFragment.show(getSupportFragmentManager(), "datePicker");
-    }
-    //
-    private Bundle getTimeFromLabel(CharSequence text) {
-        Bundle rtn = new Bundle();
-        String comps[] = text.toString().split(":");
-        int hour = 12;
-        int minute = 0;
-        if (comps.length == 2) {
-            hour = Integer.parseInt(comps[0]);
-            minute = Integer.parseInt(comps[1]);
-        }
-        rtn.putInt("hour", hour);
-        rtn.putInt("minute", minute);
-        return rtn;
-    }
-    private Bundle getDateFromLabel(CharSequence text) {
-        Bundle rtn = new Bundle();
-        String comps[] = text.toString().split("-");
-        int day = 1;
-        int month = 1;
-        int year = 1;
-        if (comps.length == 3) {
-            day = Integer.parseInt(comps[0]);
-            month = Integer.parseInt(comps[1]);
-            year = Integer.parseInt(comps[2]);
-        }
-        rtn.putInt("day", day);
-        rtn.putInt("month", month-1);
-        rtn.putInt("year", year);
-        return rtn;
-    }
-    public void setTime(int id, int h, int m) {
-        TextView tv = (TextView) findViewById(id);
-        tv.setText(String.format("%02d:%02d", h, m));
-    }
-    public void setDate(int id, int d, int m, int y) {
-        TextView tv = (TextView) findViewById(id);
-
-        tv.setText(String.format("%02d-%02d-%04d", d, m + 1, y));
-    }
-
-
 }
