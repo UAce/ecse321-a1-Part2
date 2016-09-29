@@ -84,7 +84,6 @@ public class MainActivity extends AppCompatActivity {
         tv.setText(String.format("%02d-%02d-%04d", d, m + 1, y));
     }
 
-
     private HashMap<Integer, Participant> participants;
 
 
@@ -95,8 +94,10 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //PersistenceEventRegistration.setFileName(getFilesDir().getAbsoluteFile().toString());
-        //PersistenceEventRegistration.loadEventRegistrationModel();
+        PersistenceEventRegistration.setFileName(getFilesDir().getAbsoluteFile().toString());
+        PersistenceEventRegistration.loadEventRegistrationModel();
+
+
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -116,6 +117,9 @@ public class MainActivity extends AppCompatActivity {
         tv.setText("");
         TextView tv2 = (TextView) findViewById(R.id.newevent_name);
         tv2.setText("");
+
+        //The pdf says to put this code in this method but not sure what this does ...
+
         // Initialize the data in the participant spinner
         RegistrationManager rm = RegistrationManager.getInstance();
         Spinner spinner = (Spinner) findViewById(R.id.participantspinner);
@@ -162,8 +166,12 @@ public class MainActivity extends AppCompatActivity {
         EventRegistrationController pc = new EventRegistrationController();
         try{
             pc.createParticipant(tv.getText().toString());
+            if(tv.getText().toString() == null || tv.getText().toString().trim().length() == 0)
+                throw new InvalidInputException("Participant name cannot be empty!");
+
         } catch (InvalidInputException e){
             //TODO Handle error
+            //? not sure what to do here
         }
         refreshData();
     }
@@ -171,18 +179,46 @@ public class MainActivity extends AppCompatActivity {
     public void addEvent(View v){
         //
         TextView tv = (TextView) findViewById(R.id.newevent_name);
-        TextView tf = (TextView) v;
-        DatePickerFragment a = new DatePickerFragment();
-        Date d = new Date(a.onCreateDialog(getDateFromLabel(tf.getText())));
-        Time st = new Time();
-        Time et = new Time();
+        TextView d = (TextView) findViewById(R.id.newevent_date);
+        TextView st = (TextView) findViewById(R.id.newstart_time);
+        TextView et = (TextView) findViewById(R.id.newend_time);
+        Bundle date = getDateFromLabel(d.getText().toString());
+        Bundle start = getTimeFromLabel(st.getText().toString());
+        Bundle end = getTimeFromLabel(et.getText().toString());
+        Date evDate = new Date(date.getInt("year"),date.getInt("month"),date.getInt("day"));
+        Time evStart = new Time(start.getInt("hour"), start.getInt("minute"), 0);
+        Time evEnd = new Time(end.getInt("hour"), end.getInt("minute"), 0);
+        //DatePickerFragment a = new DatePickerFragment();
         EventRegistrationController pc = new EventRegistrationController();
         try{
             //pc.createParticipant(tv.getText().toString());
-            pc.createEvent(tv.getText().toString(),, getTimeFromLabel(tf.getText()),getTimeFromLabel(tf.getText()));
+            pc.createEvent(tv.getText().toString(),evDate ,evStart, evEnd);
+
+            String error = "";
+            if(tv.getText().toString() == null || tv.getText().toString().trim().length() == 0)
+                error = error + "Event name cannot be empty! ";
+            if(evDate == null)
+                error = error + "Event date cannot be empty! ";
+            if(evStart == null)
+                error = error + "Event start time cannot be empty! ";
+            if(evEnd == null)
+                error = error + "Event end time cannot be empty! ";
+            if(evEnd != null && evStart != null && evEnd.getTime() < evStart.getTime())
+                error = error + "Event end time cannot be before event start time! ";
+            error = error.trim();
+            if(error.length() > 0)
+                throw new InvalidInputException(error);
+
         } catch (InvalidInputException e){
-            //TODO Handle error
+            //Not sure what to do here?
         }
         refreshData();
+    }
+
+    public void Register(View v){
+        //Something here...
+        //I think we need to use spinners
+        EventRegistrationController pc = new EventRegistrationController();
+        pc.register(Participant ? , Event ?); //gotta register the participant and the event
     }
 }

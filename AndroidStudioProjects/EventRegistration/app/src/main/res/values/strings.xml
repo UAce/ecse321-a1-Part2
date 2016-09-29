@@ -4,7 +4,7 @@
     <string name="newparticipant_hint">Who?</string>
     <string name="newparticipant_button">Add Participant</string>
     <string name="newevent_date_label">Date?</string>
-    <string name="newevent_date_first">asdfghj</string>
+    <string name="newevent_date_first">2016-09-28</string>
     <string name="newparticipant_label">Participant?</string>
     <string name="newparticipant_first">01-01-2016</string>
     <string name="newevent_hint">Event name?</string>
@@ -16,6 +16,6 @@
     <string name="newstart_time_label">Start time?</string>
     <string name="newend_time_label">End time?</string>
     <string name="newestart_time">10:00</string>
-    <string name="newend_time">14:00</string>
+    <string name="newend_time">11:00</string>
 
 </resources>
