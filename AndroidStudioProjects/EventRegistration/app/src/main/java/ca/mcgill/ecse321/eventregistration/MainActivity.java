@@ -102,6 +102,8 @@ public class MainActivity extends AppCompatActivity {
 
     private HashMap<Integer, Participant> participants;
     private HashMap<Integer, Event> events;
+    String error = null;
+    boolean isFirstLaunch = true;
 
 
     @Override
@@ -111,9 +113,11 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         //Set a flag
-        //PersistenceEventRegistration.
-        PersistenceEventRegistration.loadEventRegistrationModel(getFilesDir()+File.separator+"EventRegistration.xml");
-
+        if(isFirstLaunch==true) {
+            //PersistenceEventRegistration.
+            PersistenceEventRegistration.loadEventRegistrationModel(getFilesDir() + File.separator + "EventRegistration.xml");
+            isFirstLaunch = false;
+        }
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -193,7 +197,6 @@ public class MainActivity extends AppCompatActivity {
         //EditText err = (EditText) findViewById(R.id.newparticipant_name);
         TextView eM = (TextView) findViewById(R.id.eMessage);
         EventRegistrationController pc = new EventRegistrationController();
-        String error = null;
         try{
             pc.createParticipant(tv.getText().toString());
         } catch (InvalidInputException e){
@@ -221,7 +224,6 @@ public class MainActivity extends AppCompatActivity {
         Time evStart = new Time(start.getInt("hour"), start.getInt("minute"), 0);
         Time evEnd = new Time(end.getInt("hour"), end.getInt("minute"), 0);
         EventRegistrationController pc = new EventRegistrationController();
-        String error = null;
         try{
             //pc.createParticipant(tv.getText().toString());
             pc.createEvent(tv.getText().toString(),evDate ,evStart, evEnd);
@@ -245,7 +247,6 @@ public class MainActivity extends AppCompatActivity {
 
         Participant p = participants.get((spinner.getSelectedItemPosition()));
         Event ev = events.get((spinner2.getSelectedItemPosition()));
-        String error = null;
         try{
             //register the participant and the event
             pc.register(p,ev);
