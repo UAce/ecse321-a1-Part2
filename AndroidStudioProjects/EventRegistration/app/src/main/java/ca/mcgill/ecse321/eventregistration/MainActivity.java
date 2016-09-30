@@ -15,10 +15,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import java.io.File;
 import java.sql.Date;
 import java.sql.Time;
 import java.util.Calendar;
@@ -27,12 +29,15 @@ import java.util.Iterator;
 
 import ca.mcgill.ecse321.eventregistration.controller.EventRegistrationController;
 import ca.mcgill.ecse321.eventregistration.controller.InvalidInputException;
+import ca.mcgill.ecse321.eventregistration.model.Event;
 import ca.mcgill.ecse321.eventregistration.model.Participant;
 import ca.mcgill.ecse321.eventregistration.model.RegistrationManager;
 import ca.mcgill.ecse321.eventregistration.persistence.PersistenceEventRegistration;
+import ca.mcgill.ecse321.eventregistration.persistence.PersistenceXStream;
 
 
 public class MainActivity extends AppCompatActivity {
+
 
     public void showDatePickerDialog(View v) {
         TextView tf = (TextView) v;
@@ -43,6 +48,17 @@ public class MainActivity extends AppCompatActivity {
         newFragment.show(getSupportFragmentManager(), "datePicker");
     }
     //
+
+    public void showTimePickerDialog(View v) {
+        TextView tf = (TextView) v;
+        Bundle args = getTimeFromLabel(tf.getText());
+        args.putInt("id", v.getId());
+        TimePickerFragment newFragment = new TimePickerFragment();
+        newFragment.setArguments(args);
+        newFragment.show(getSupportFragmentManager(), "TimePicker");
+    }
+    //
+
 
     private Bundle getTimeFromLabel(CharSequence text) {
         Bundle rtn = new Bundle();
@@ -85,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private HashMap<Integer, Participant> participants;
+    private HashMap<Integer, Event> events;
 
 
     @Override
@@ -93,22 +110,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        PersistenceEventRegistration.setFileName(getFilesDir().getAbsoluteFile().toString());
-        PersistenceEventRegistration.loadEventRegistrationModel();
-
-
-
+        //Set a flag
+        //PersistenceEventRegistration.
+        PersistenceEventRegistration.loadEventRegistrationModel(getFilesDir()+File.separator+"EventRegistration.xml");
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                Snackbar.make(view, "Refreshed!", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
+                refreshData();
             }
         });
-
         refreshData();
     }
 
@@ -117,8 +131,6 @@ public class MainActivity extends AppCompatActivity {
         tv.setText("");
         TextView tv2 = (TextView) findViewById(R.id.newevent_name);
         tv2.setText("");
-
-        //The pdf says to put this code in this method but not sure what this does ...
 
         // Initialize the data in the participant spinner
         RegistrationManager rm = RegistrationManager.getInstance();
@@ -136,8 +148,23 @@ public class MainActivity extends AppCompatActivity {
             this.participants.put(i, p);
         }
         spinner.setAdapter(participantAdapter);
-    }
 
+        // Initialize the data in the event spinner
+        Spinner spinner2 = (Spinner) findViewById(R.id.eventspinner);
+        ArrayAdapter<CharSequence> eventAdapter = new
+                ArrayAdapter<CharSequence>(this, android.R.layout.simple_spinner_item);
+        eventAdapter.setDropDownViewResource(
+                android.R.layout.simple_spinner_dropdown_item);
+        this.events = new HashMap<Integer, Event>();
+        int j = 0;
+        for (Iterator<Event> events = rm.getEvents().iterator();
+             events.hasNext(); j++) {
+            Event e = events.next();
+            eventAdapter.add(e.getName());
+            this.events.put(j, e);
+        }
+        spinner2.setAdapter(eventAdapter);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -157,21 +184,24 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
     public void addParticipant(View v){
+        //
         TextView tv = (TextView) findViewById(R.id.newparticipant_name);
+        //EditText err = (EditText) findViewById(R.id.newparticipant_name);
+        TextView eM = (TextView) findViewById(R.id.eMessage);
         EventRegistrationController pc = new EventRegistrationController();
+        String error = null;
         try{
             pc.createParticipant(tv.getText().toString());
-            if(tv.getText().toString() == null || tv.getText().toString().trim().length() == 0)
-                throw new InvalidInputException("Participant name cannot be empty!");
-
         } catch (InvalidInputException e){
             //TODO Handle error
-            //? not sure what to do here
+            error = e.getMessage();
+            //err.setText(error);
+            eM.setText(error);
+            eM.setVisibility(View.VISIBLE);
         }
         refreshData();
     }
@@ -179,6 +209,8 @@ public class MainActivity extends AppCompatActivity {
     public void addEvent(View v){
         //
         TextView tv = (TextView) findViewById(R.id.newevent_name);
+        //EditText err = (EditText) findViewById(R.id.newevent_name);
+        TextView eM = (TextView) findViewById(R.id.eMessage);
         TextView d = (TextView) findViewById(R.id.newevent_date);
         TextView st = (TextView) findViewById(R.id.newstart_time);
         TextView et = (TextView) findViewById(R.id.newend_time);
@@ -188,37 +220,42 @@ public class MainActivity extends AppCompatActivity {
         Date evDate = new Date(date.getInt("year"),date.getInt("month"),date.getInt("day"));
         Time evStart = new Time(start.getInt("hour"), start.getInt("minute"), 0);
         Time evEnd = new Time(end.getInt("hour"), end.getInt("minute"), 0);
-        //DatePickerFragment a = new DatePickerFragment();
         EventRegistrationController pc = new EventRegistrationController();
+        String error = null;
         try{
             //pc.createParticipant(tv.getText().toString());
             pc.createEvent(tv.getText().toString(),evDate ,evStart, evEnd);
-
-            String error = "";
-            if(tv.getText().toString() == null || tv.getText().toString().trim().length() == 0)
-                error = error + "Event name cannot be empty! ";
-            if(evDate == null)
-                error = error + "Event date cannot be empty! ";
-            if(evStart == null)
-                error = error + "Event start time cannot be empty! ";
-            if(evEnd == null)
-                error = error + "Event end time cannot be empty! ";
-            if(evEnd != null && evStart != null && evEnd.getTime() < evStart.getTime())
-                error = error + "Event end time cannot be before event start time! ";
-            error = error.trim();
-            if(error.length() > 0)
-                throw new InvalidInputException(error);
-
         } catch (InvalidInputException e){
-            //Not sure what to do here?
+            //TODO Handle error
+            error = e.getMessage();
+            //err.setError(error);
+            eM.setText(error);
+            eM.setVisibility(View.VISIBLE);
         }
         refreshData();
     }
 
-    public void Register(View v){
-        //Something here...
-        //I think we need to use spinners
+    public void Register(View v) throws InvalidInputException {
+        //
+        TextView eM = (TextView) findViewById(R.id.eMessage);
+        Spinner spinner = (Spinner) findViewById(R.id.participantspinner);
+        Spinner spinner2 = (Spinner) findViewById(R.id.eventspinner);
+
         EventRegistrationController pc = new EventRegistrationController();
-        pc.register(Participant ? , Event ?); //gotta register the participant and the event
+
+        Participant p = participants.get((spinner.getSelectedItemPosition()));
+        Event ev = events.get((spinner2.getSelectedItemPosition()));
+        String error = null;
+        try{
+            //register the participant and the event
+            pc.register(p,ev);
+        } catch (InvalidInputException e){
+            //TODO Handle error
+            error = e.getMessage();
+            eM.setText(error);
+            eM.setVisibility(View.VISIBLE);
+        }
+        //refresh
+        refreshData();
     }
 }

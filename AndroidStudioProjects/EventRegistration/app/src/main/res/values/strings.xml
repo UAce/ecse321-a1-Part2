@@ -4,9 +4,8 @@
     <string name="newparticipant_hint">Who?</string>
     <string name="newparticipant_button">Add Participant</string>
     <string name="newevent_date_label">Date?</string>
-    <string name="newevent_date_first">2016-09-28</string>
+    <string name="newevent_date_first">29-09-2016</string>
     <string name="newparticipant_label">Participant?</string>
-    <string name="newparticipant_first">01-01-2016</string>
     <string name="newevent_hint">Event name?</string>
     <string name="newevent_button">Add Event</string>
     <string name="participantspinner_label">Participant?</string>
